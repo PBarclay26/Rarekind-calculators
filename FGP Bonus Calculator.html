@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FG&amp;P Bonus Calculator</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:           rgba(216, 206, 188, 0.50);
+    --surface:      #FFFFFF;
+    --border:       #E2E0D8;
+    --border-mid:   #CCCAC0;
+    --text:         #1A1916;
+    --text-mid:     #6B6960;
+    --text-soft:    #9E9C94;
+    --amber:        #8C6800;
+    --amber-bg:     #FFE189;
+    --amber-border: #E8C97A;
+    --none-bg:      #F0EFEB;
+    --dark:         #313032;
+    --pill-r:       6px;
+    --card-r:       14px;
+    --font:         Arial, sans-serif;
+    --transition:   180ms ease;
+  }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 2.5rem 1rem 4rem;
+  }
+
+  .wrap { width: 100%; max-width: 620px; }
+
+  .header { margin-bottom: 2rem; }
+
+  .header h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text);
+    margin-bottom: 0.3rem;
+  }
+
+  .header p { font-size: 0.875rem; color: var(--text-mid); }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--card-r);
+    padding: 1.4rem 1.5rem;
+    margin-bottom: 12px;
+  }
+
+  .card-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-soft);
+    margin-bottom: 1.1rem;
+  }
+
+  .field {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .field label { font-size: 0.9rem; color: var(--text); }
+
+  input[type="text"].num-input {
+    font-family: var(--font);
+    font-size: 0.875rem;
+    font-weight: 500;
+    width: 160px;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg);
+    color: var(--text);
+    text-align: right;
+    transition: border-color var(--transition), box-shadow var(--transition);
+  }
+
+  input[type="text"].num-input:focus {
+    outline: none;
+    border-color: var(--border-mid);
+    box-shadow: 0 0 0 3px rgba(26,26,22,0.06);
+  }
+
+  /* Niche rows */
+  .niche-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .niche-row:last-child { border-bottom: none; padding-bottom: 0; }
+  .niche-row:first-child { padding-top: 0; }
+
+  .niche-name { font-size: 0.9rem; color: var(--text); font-weight: 400; flex: 1; }
+
+  .seg-control {
+    display: flex;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  .seg-control input[type="radio"] { display: none; }
+
+  .seg-control label {
+    font-size: 0.78rem;
+    font-weight: 500;
+    padding: 0.38rem 0.7rem;
+    cursor: pointer;
+    color: var(--text-soft);
+    background: var(--bg);
+    transition: background var(--transition), color var(--transition);
+    border-right: 1px solid var(--border);
+    white-space: nowrap;
+    user-select: none;
+  }
+
+  .seg-control label:last-of-type { border-right: none; }
+
+  .seg-control input[value="none"]:checked + label { background: var(--none-bg); color: var(--text-mid); }
+  .seg-control input[value="ubb"]:checked + label  { background: var(--amber-bg); color: var(--amber); }
+  .seg-control input[value="nbb"]:checked + label  { background: var(--dark); color: #fff; }
+
+  /* Results */
+  .result-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 1rem;
+  }
+
+  .result-tile {
+    border-radius: 10px;
+    padding: 1rem 1.1rem;
+    border: 1px solid var(--dark);
+    background: #FFFFFF;
+  }
+
+  .result-tile.tile-active {
+    background: var(--dark);
+    border-color: var(--dark);
+  }
+
+  .result-tile.tile-inactive {
+    background: #FFFFFF;
+    border-color: var(--dark);
+  }
+
+  .result-tile.total-active {
+    background: #F16122;
+    border-color: #F16122;
+  }
+
+  .result-tile.total-inactive {
+    background: #FFFFFF;
+    border-color: var(--dark);
+  }
+
+  .result-tile-label {
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 0.4rem;
+    color: var(--text-soft);
+  }
+
+  .result-tile.tile-active .result-tile-label,
+  .result-tile.total-active .result-tile-label { color: rgba(255,255,255,0.75); }
+
+  .result-tile.tile-inactive .result-tile-label,
+  .result-tile.total-inactive .result-tile-label { color: var(--dark); opacity: 0.5; }
+
+  .result-tile-value {
+    font-family: var(--font);
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    line-height: 1;
+    color: var(--text);
+  }
+
+  .result-tile.tile-active .result-tile-value,
+  .result-tile.total-active .result-tile-value { color: #FFFFFF; }
+
+  .result-tile.tile-inactive .result-tile-value,
+  .result-tile.total-inactive .result-tile-value { color: var(--dark); opacity: 0.4; }
+
+  .result-tile.total-active .result-tile-value,
+  .result-tile.total-inactive .result-tile-value { font-size: 1.9rem; }
+
+  .result-tile-sub { font-size: 0.72rem; margin-top: 0.3rem; color: var(--text-soft); }
+
+  .result-tile.tile-active .result-tile-sub,
+  .result-tile.total-active .result-tile-sub { color: rgba(255,255,255,0.65); }
+
+  .result-tile.tile-inactive .result-tile-sub,
+  .result-tile.total-inactive .result-tile-sub { color: var(--dark); opacity: 0.35; }
+
+  /* Breakdown */
+  .breakdown {
+    font-size: 0.8rem;
+    color: var(--text-mid);
+    line-height: 2;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .breakdown b { color: var(--text); font-weight: 500; }
+  .breakdown .note { font-size: 0.75rem; color: var(--text-soft); }
+
+  /* Niche summary pills */
+  .niche-summary { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 1rem; }
+
+  .npill {
+    font-size: 0.72rem;
+    font-weight: 500;
+    padding: 3px 9px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    color: var(--text-soft);
+    background: var(--none-bg);
+  }
+
+  .npill.ubb { background: var(--amber-bg); border-color: var(--amber-border); color: var(--amber); }
+  .npill.nbb { background: var(--dark); border-color: var(--dark); color: #fff; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="header">
+    <h1>FG&amp;P Bonus Calculator</h1>
+    <p>Select each niche's bonus outcome to calculate your quarterly bonus.</p>
+  </div>
+
+  <!-- Salary -->
+  <div class="card">
+    <p class="card-label">Your details</p>
+    <div class="field">
+      <label for="annual-sal">Annual salary ($)</label>
+      <input type="text" class="num-input" id="annual-sal" value="0" oninput="fmtInput(this); calc()">
+    </div>
+  </div>
+
+  <!-- Niche selectors -->
+  <div class="card">
+    <p class="card-label">Niche outcomes</p>
+
+    <div class="niche-row">
+      <span class="niche-name">T&amp;I Hunter</span>
+      <div class="seg-control">
+        <input type="radio" name="n0" id="n0-none" value="none" checked onchange="calc()"><label for="n0-none">None</label>
+        <input type="radio" name="n0" id="n0-ubb"  value="ubb"        onchange="calc()"><label for="n0-ubb">UBB</label>
+        <input type="radio" name="n0" id="n0-nbb"  value="nbb"        onchange="calc()"><label for="n0-nbb">NBB</label>
+      </div>
+    </div>
+
+    <div class="niche-row">
+      <span class="niche-name">T&amp;I Central Coast</span>
+      <div class="seg-control">
+        <input type="radio" name="n1" id="n1-none" value="none" checked onchange="calc()"><label for="n1-none">None</label>
+        <input type="radio" name="n1" id="n1-ubb"  value="ubb"        onchange="calc()"><label for="n1-ubb">UBB</label>
+        <input type="radio" name="n1" id="n1-nbb"  value="nbb"        onchange="calc()"><label for="n1-nbb">NBB</label>
+      </div>
+    </div>
+
+    <div class="niche-row">
+      <span class="niche-name">T&amp;I Western Sydney</span>
+      <div class="seg-control">
+        <input type="radio" name="n2" id="n2-none" value="none" checked onchange="calc()"><label for="n2-none">None</label>
+        <input type="radio" name="n2" id="n2-ubb"  value="ubb"        onchange="calc()"><label for="n2-ubb">UBB</label>
+        <input type="radio" name="n2" id="n2-nbb"  value="nbb"        onchange="calc()"><label for="n2-nbb">NBB</label>
+      </div>
+    </div>
+
+    <div class="niche-row">
+      <span class="niche-name">T&amp;I Brisbane</span>
+      <div class="seg-control">
+        <input type="radio" name="n3" id="n3-none" value="none" checked onchange="calc()"><label for="n3-none">None</label>
+        <input type="radio" name="n3" id="n3-ubb"  value="ubb"        onchange="calc()"><label for="n3-ubb">UBB</label>
+        <input type="radio" name="n3" id="n3-nbb"  value="nbb"        onchange="calc()"><label for="n3-nbb">NBB</label>
+      </div>
+    </div>
+
+    <div class="niche-row">
+      <span class="niche-name">EITS</span>
+      <div class="seg-control">
+        <input type="radio" name="n4" id="n4-none" value="none" checked onchange="calc()"><label for="n4-none">None</label>
+        <input type="radio" name="n4" id="n4-ubb"  value="ubb"        onchange="calc()"><label for="n4-ubb">UBB</label>
+        <input type="radio" name="n4" id="n4-nbb"  value="nbb"        onchange="calc()"><label for="n4-nbb">NBB</label>
+      </div>
+    </div>
+
+    <div class="niche-row">
+      <span class="niche-name">Corporate Hunter</span>
+      <div class="seg-control">
+        <input type="radio" name="n5" id="n5-none" value="none" checked onchange="calc()"><label for="n5-none">None</label>
+        <input type="radio" name="n5" id="n5-ubb"  value="ubb"        onchange="calc()"><label for="n5-ubb">UBB</label>
+        <input type="radio" name="n5" id="n5-nbb"  value="nbb"        onchange="calc()"><label for="n5-nbb">NBB</label>
+      </div>
+    </div>
+
+    <div class="niche-row">
+      <span class="niche-name">Corporate Central Coast</span>
+      <div class="seg-control">
+        <input type="radio" name="n6" id="n6-none" value="none" checked onchange="calc()"><label for="n6-none">None</label>
+        <input type="radio" name="n6" id="n6-ubb"  value="ubb"        onchange="calc()"><label for="n6-ubb">UBB</label>
+        <input type="radio" name="n6" id="n6-nbb"  value="nbb"        onchange="calc()"><label for="n6-nbb">NBB</label>
+      </div>
+    </div>
+
+    <div class="niche-row">
+      <span class="niche-name">Corporate Western Sydney</span>
+      <div class="seg-control">
+        <input type="radio" name="n7" id="n7-none" value="none" checked onchange="calc()"><label for="n7-none">None</label>
+        <input type="radio" name="n7" id="n7-ubb"  value="ubb"        onchange="calc()"><label for="n7-ubb">UBB</label>
+        <input type="radio" name="n7" id="n7-nbb"  value="nbb"        onchange="calc()"><label for="n7-nbb">NBB</label>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Results -->
+  <div class="card">
+    <p class="card-label">Your result</p>
+
+    <div class="niche-summary" id="niche-summary"></div>
+
+    <div class="result-grid">
+      <div class="result-tile tile-inactive" id="nbb-tile">
+        <div class="result-tile-label">From niche budget</div>
+        <div class="result-tile-value" id="nbb-val">$0</div>
+        <div class="result-tile-sub" id="nbb-sub"></div>
+      </div>
+      <div class="result-tile tile-inactive" id="ubb-tile">
+        <div class="result-tile-label">From niche under budget</div>
+        <div class="result-tile-value" id="ubb-val">$0</div>
+        <div class="result-tile-sub" id="ubb-sub"></div>
+      </div>
+      <div class="result-tile total-inactive" id="total-tile">
+        <div class="result-tile-label">Total bonus this quarter</div>
+        <div class="result-tile-value" id="total-val">$0</div>
+        <div class="result-tile-sub" id="total-sub"></div>
+      </div>
+    </div>
+
+    <div class="breakdown" id="breakdown"></div>
+  </div>
+
+</div>
+
+<script>
+  var NICHES = [
+    'T&I Hunter', 'T&I Central Coast', 'T&I Western Sydney', 'T&I Brisbane',
+    'EITS', 'Corporate Hunter', 'Corporate Central Coast', 'Corporate Western Sydney'
+  ];
+
+  var NBB_PER_NICHE = 0.625 / 100;
+  var UBB_PER_NICHE = 0.3125 / 100;
+
+  function fmtInput(el) {
+    var raw = el.value.replace(/[^0-9]/g, '');
+    var num = parseInt(raw, 10);
+    el.value = isNaN(num) ? '0' : num.toLocaleString('en-AU');
+  }
+
+  function parseInput(id) {
+    var val = document.getElementById(id).value.replace(/,/g, '');
+    return parseFloat(val) || 0;
+  }
+
+  function money(n) {
+    return '$' + Math.round(n).toLocaleString('en-AU');
+  }
+
+  function setTile(id, activeClass, inactiveClass, isActive) {
+    var el = document.getElementById(id);
+    el.classList.remove(activeClass, inactiveClass);
+    el.classList.add(isActive ? activeClass : inactiveClass);
+  }
+
+  function getNicheStatus(i) {
+    var radios = document.querySelectorAll('input[name="n' + i + '"]');
+    for (var r = 0; r < radios.length; r++) {
+      if (radios[r].checked) return radios[r].value;
+    }
+    return 'none';
+  }
+
+  function calc() {
+    var annual = parseInput('annual-sal');
+    var qtrSal = annual / 4;
+
+    var nbbCount = 0, ubbCount = 0, statuses = [];
+
+    for (var i = 0; i < 8; i++) {
+      var s = getNicheStatus(i);
+      statuses.push(s);
+      if (s === 'nbb') nbbCount++;
+      if (s === 'ubb') ubbCount++;
+    }
+
+    var nbbBonus   = qtrSal * NBB_PER_NICHE * nbbCount;
+    var ubbBonus   = qtrSal * UBB_PER_NICHE * ubbCount;
+    var totalBonus = nbbBonus + ubbBonus;
+    var totalPct   = qtrSal > 0 ? (totalBonus / qtrSal) * 100 : 0;
+
+    // Niche summary pills
+    var pillsHTML = '';
+    for (var j = 0; j < 8; j++) {
+      var cls = statuses[j] === 'nbb' ? 'nbb' : statuses[j] === 'ubb' ? 'ubb' : '';
+      var tag = statuses[j] === 'nbb' ? ' (NBB)' : statuses[j] === 'ubb' ? ' (UBB)' : '';
+      pillsHTML += '<span class="npill ' + cls + '">' + NICHES[j] + tag + '</span>';
+    }
+    document.getElementById('niche-summary').innerHTML = pillsHTML;
+
+    // Tiles
+    document.getElementById('nbb-val').textContent = money(nbbBonus);
+    document.getElementById('nbb-sub').textContent = nbbCount + ' of 8 niches at budget (0.625% each)';
+    setTile('nbb-tile', 'tile-active', 'tile-inactive', nbbBonus > 0);
+
+    document.getElementById('ubb-val').textContent = money(ubbBonus);
+    document.getElementById('ubb-sub').textContent = ubbCount + ' of 8 niches under budget (0.3125% each)';
+    setTile('ubb-tile', 'tile-active', 'tile-inactive', ubbBonus > 0);
+
+    document.getElementById('total-val').textContent = money(totalBonus);
+    document.getElementById('total-sub').textContent = qtrSal > 0
+      ? totalPct.toFixed(4).replace(/\.?0+$/, '') + '% of quarterly salary'
+      : '';
+    setTile('total-tile', 'total-active', 'total-inactive', totalBonus > 0);
+
+    // Breakdown
+    var lines = [];
+
+    if (annual === 0) {
+      lines.push('Enter your annual salary to see bonus amounts.');
+    } else {
+      lines.push('Quarterly salary: <b>' + money(qtrSal) + '</b> (annual &divide; 4)');
+      if (nbbCount > 0) lines.push('NBB: <b>' + nbbCount + '</b> niche' + (nbbCount > 1 ? 's' : '') + ' &times; 0.625% &times; ' + money(qtrSal) + ' = <b>' + money(nbbBonus) + '</b>');
+      if (ubbCount > 0) lines.push('UBB: <b>' + ubbCount + '</b> niche' + (ubbCount > 1 ? 's' : '') + ' &times; 0.3125% &times; ' + money(qtrSal) + ' = <b>' + money(ubbBonus) + '</b>');
+      if (nbbCount === 0 && ubbCount === 0) lines.push('No niches have achieved NBB or UBB &mdash; no bonus payable.');
+      if (nbbCount === 8) lines.push('<span class="note">All 8 niches at budget &mdash; full 5% of quarterly salary.</span>');
+      lines.push('<span class="note">Maximum possible bonus: ' + money(qtrSal * 0.05) + ' (all 8 niches at NBB).</span>');
+    }
+
+    document.getElementById('breakdown').innerHTML = lines.join('<br>');
+  }
+
+  calc();
+</script>
+</body>
+</html>

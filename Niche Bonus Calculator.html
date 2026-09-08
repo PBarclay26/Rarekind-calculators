@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Niche Bonus Calculator</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:           rgba(216, 206, 188, 0.50);
+    --surface:      #FFFFFF;
+    --border:       #E2E0D8;
+    --border-mid:   #CCCAC0;
+    --text:         #1A1916;
+    --text-mid:     #6B6960;
+    --text-soft:    #9E9C94;
+    --green:        #1A7A52;
+    --green-bg:     #E8F5EE;
+    --green-border: #A3D4BB;
+    --amber:        #8C5C00;
+    --amber-bg:     #FEF3DC;
+    --amber-border: #E8C97A;
+    --dark:         #313032;
+    --pill-r:       6px;
+    --card-r:       14px;
+    --input-r:      8px;
+    --font:         Arial, sans-serif;
+    --mono:         Arial, sans-serif;
+    --transition:   180ms ease;
+  }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 2.5rem 1rem 4rem;
+  }
+
+  .wrap { width: 100%; max-width: 580px; }
+
+  .header { margin-bottom: 2rem; }
+
+  .header h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text);
+    margin-bottom: 0.3rem;
+  }
+
+  .header p { font-size: 0.875rem; color: var(--text-mid); font-weight: 400; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--card-r);
+    padding: 1.4rem 1.5rem;
+    margin-bottom: 12px;
+  }
+
+  .card-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-soft);
+    margin-bottom: 1.1rem;
+  }
+
+  .field {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.9rem;
+  }
+
+  .field:last-child { margin-bottom: 0; }
+
+  .field-label { font-size: 0.9rem; color: var(--text); font-weight: 400; flex: 1; }
+
+  .field-hint { font-size: 0.75rem; color: var(--text-soft); display: block; margin-top: 1px; }
+
+  input[type="text"].num-input {
+    font-family: var(--font);
+    font-size: 0.875rem;
+    font-weight: 500;
+    width: 150px;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: var(--input-r);
+    background: var(--bg);
+    color: var(--text);
+    text-align: right;
+    transition: border-color var(--transition), box-shadow var(--transition);
+  }
+
+  input[type="text"].num-input:focus {
+    outline: none;
+    border-color: var(--border-mid);
+    box-shadow: 0 0 0 3px rgba(26,26,22,0.06);
+  }
+
+  .divider { height: 1px; background: var(--border); margin: 1rem 0; }
+
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.85rem;
+  }
+
+  .toggle-row:last-child { margin-bottom: 0; }
+
+  .toggle-label { font-size: 0.9rem; color: var(--text); }
+
+  .toggle { position: relative; width: 40px; height: 22px; flex-shrink: 0; }
+
+  .toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+
+  .toggle-track {
+    position: absolute;
+    inset: 0;
+    background: var(--border-mid);
+    border-radius: 11px;
+    cursor: pointer;
+    transition: background var(--transition);
+  }
+
+  .toggle-thumb {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 16px;
+    height: 16px;
+    background: white;
+    border-radius: 50%;
+    transition: transform var(--transition);
+    pointer-events: none;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+  }
+
+  .toggle input:checked ~ .toggle-track { background: var(--green); }
+  .toggle input:checked ~ .toggle-thumb { transform: translateX(18px); }
+
+  /* Result grid */
+  .result-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 1rem;
+  }
+
+  /* Base tile styles */
+  .result-tile {
+    border-radius: 10px;
+    padding: 1rem 1.1rem;
+    border: 1px solid var(--dark);
+    background: #FFFFFF;
+  }
+
+  /* Active niche tiles — dark fill, white text */
+  .result-tile.niche-active {
+    background: var(--dark);
+    border-color: var(--dark);
+  }
+
+  /* Inactive niche tiles — white with dark outline */
+  .result-tile.niche-inactive {
+    background: #FFFFFF;
+    border-color: var(--dark);
+  }
+
+  /* Regional active */
+  .result-tile.regional-active {
+    background: var(--dark);
+    border-color: var(--dark);
+  }
+
+  /* Regional inactive — white with dark outline */
+  .result-tile.regional-inactive {
+    background: #FFFFFF;
+    border-color: var(--dark);
+  }
+
+  /* Total tile */
+  .result-tile.total-active {
+    background: #F16122;
+    border-color: #F16122;
+  }
+
+  .result-tile.total-inactive {
+    background: #FFFFFF;
+    border-color: var(--dark);
+  }
+
+  /* Labels */
+  .result-tile-label {
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 0.4rem;
+    color: var(--text-soft);
+  }
+
+  .result-tile.niche-active .result-tile-label,
+  .result-tile.regional-active .result-tile-label,
+  .result-tile.total-active .result-tile-label { color: rgba(255,255,255,0.75); }
+
+  .result-tile.niche-inactive .result-tile-label,
+  .result-tile.regional-inactive .result-tile-label,
+  .result-tile.total-inactive .result-tile-label { color: var(--dark); opacity: 0.5; }
+
+  /* Values */
+  .result-tile-value {
+    font-family: var(--mono);
+    font-size: 1.5rem;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    color: var(--text);
+  }
+
+  .result-tile.niche-active .result-tile-value,
+  .result-tile.regional-active .result-tile-value,
+  .result-tile.total-active .result-tile-value { color: #FFFFFF; }
+
+  .result-tile.niche-inactive .result-tile-value,
+  .result-tile.regional-inactive .result-tile-value,
+  .result-tile.total-inactive .result-tile-value { color: var(--dark); opacity: 0.4; }
+
+  /* Total value larger */
+  .result-tile.total-active .result-tile-value,
+  .result-tile.total-inactive .result-tile-value { font-size: 1.9rem; }
+
+  /* Subs */
+  .result-tile-sub { font-size: 0.72rem; margin-top: 0.3rem; color: var(--text-soft); }
+
+  .result-tile.niche-active .result-tile-sub,
+  .result-tile.regional-active .result-tile-sub,
+  .result-tile.total-active .result-tile-sub { color: rgba(255,255,255,0.65); }
+
+  .result-tile.niche-inactive .result-tile-sub,
+  .result-tile.regional-inactive .result-tile-sub,
+  .result-tile.total-inactive .result-tile-sub { color: var(--dark); opacity: 0.35; }
+
+  /* Status pills */
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    padding: 0.35rem 0.75rem;
+    border-radius: var(--pill-r);
+    margin-bottom: 1rem;
+  }
+
+  .pill-green { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
+  .pill-amber { background: var(--amber-bg); color: var(--amber); border: 1px solid var(--amber-border); }
+  .pill-gray  { background: var(--bg); color: var(--text-mid); border: 1px solid var(--border); }
+
+  .pill-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+
+  .breakdown {
+    font-size: 0.8rem;
+    color: var(--text-mid);
+    line-height: 2;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .breakdown b { color: var(--text); font-weight: 500; }
+  .breakdown .note { font-size: 0.75rem; color: var(--text-soft); }
+  .breakdown .warn { color: #B45309; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="header">
+    <h1>Niche Bonus Calculator</h1>
+    <p>Estimate your quarterly bonus based on team billings, KPI targets, and regional budget.</p>
+  </div>
+
+  <!-- Inputs -->
+  <div class="card">
+    <p class="card-label">Your details</p>
+    <div class="field">
+      <div>
+        <span class="field-label">Annual salary</span>
+        <span class="field-hint">We'll divide this by 4 for your quarterly figure</span>
+      </div>
+      <input type="text" class="num-input" id="annual-sal" value="0" oninput="fmtInput(this); calc()">
+    </div>
+    <div class="divider"></div>
+    <div class="field">
+      <span class="field-label">Quarterly budget</span>
+      <input type="text" class="num-input" id="qtr-budget" value="0" oninput="fmtInput(this); calc()">
+    </div>
+    <div class="field">
+      <span class="field-label">Quarterly actual billings</span>
+      <input type="text" class="num-input" id="qtr-actual" value="0" oninput="fmtInput(this); calc()">
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="card">
+    <p class="card-label">KPI targets</p>
+    <div class="toggle-row">
+      <span class="toggle-label">LinkedIn posting KPIs met</span>
+      <label class="toggle">
+        <input type="checkbox" id="kpi-linkedin" onchange="calc()">
+        <span class="toggle-track"></span>
+        <span class="toggle-thumb"></span>
+      </label>
+    </div>
+    <div class="toggle-row">
+      <span class="toggle-label">Client visit targets met (incl. cross poll)</span>
+      <label class="toggle">
+        <input type="checkbox" id="kpi-visits" onchange="calc()">
+        <span class="toggle-track"></span>
+        <span class="toggle-thumb"></span>
+      </label>
+    </div>
+  </div>
+
+  <!-- Regional -->
+  <div class="card">
+    <p class="card-label">Regional budget</p>
+    <div class="toggle-row">
+      <span class="toggle-label">Regional budget achieved?</span>
+      <label class="toggle">
+        <input type="checkbox" id="regional" onchange="calc()">
+        <span class="toggle-track"></span>
+        <span class="toggle-thumb"></span>
+      </label>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div class="card">
+    <p class="card-label">Your result</p>
+
+    <div id="status-wrap"></div>
+
+    <div class="result-grid">
+      <div class="result-tile niche-inactive" id="base-tile">
+        <div class="result-tile-label" id="base-label">Niche budget bonus</div>
+        <div class="result-tile-value" id="base-val">$0</div>
+        <div class="result-tile-sub" id="base-sub"></div>
+      </div>
+
+      <div class="result-tile niche-inactive" id="obb-tile" style="display:none;">
+        <div class="result-tile-label">Over budget bonus</div>
+        <div class="result-tile-value" id="obb-val">$0</div>
+        <div class="result-tile-sub" id="obb-sub"></div>
+      </div>
+
+      <div class="result-tile regional-inactive" id="regional-tile" style="display:none;">
+        <div class="result-tile-label">Regional budget bonus</div>
+        <div class="result-tile-value" id="regional-val">$0</div>
+        <div class="result-tile-sub" id="regional-sub"></div>
+      </div>
+
+      <div class="result-tile total-inactive" id="total-tile">
+        <div class="result-tile-label">Total bonus payable</div>
+        <div class="result-tile-value" id="total-val">$0</div>
+        <div class="result-tile-sub" id="total-sub"></div>
+      </div>
+    </div>
+
+    <div class="breakdown" id="breakdown"></div>
+  </div>
+
+</div>
+
+<script>
+  function fmtInput(el) {
+    var raw = el.value.replace(/[^0-9]/g, '');
+    var num = parseInt(raw, 10);
+    el.value = isNaN(num) ? '0' : num.toLocaleString('en-AU');
+  }
+
+  function parseInput(id) {
+    var val = document.getElementById(id).value.replace(/,/g, '');
+    return parseFloat(val) || 0;
+  }
+
+  function money(n) {
+    return '$' + Math.round(n).toLocaleString('en-AU');
+  }
+
+  function setTileState(id, activeClass, inactiveClass, isActive) {
+    var el = document.getElementById(id);
+    el.classList.remove(activeClass, inactiveClass);
+    el.classList.add(isActive ? activeClass : inactiveClass);
+  }
+
+  function calc() {
+    var annual   = parseInput('annual-sal');
+    var budget   = parseInput('qtr-budget');
+    var actual   = parseInput('qtr-actual');
+    var linkedin = document.getElementById('kpi-linkedin').checked;
+    var visits   = document.getElementById('kpi-visits').checked;
+    var regional = document.getElementById('regional').checked;
+
+    var qtrSal  = annual / 4;
+    var pct     = budget > 0 ? (actual / budget) * 100 : 0;
+    var overPct = pct - 100;
+    var kpisMet = linkedin && visits;
+
+    // --- Status pill ---
+    var pillClass, pillText, status;
+    if (budget === 0) {
+      status = 'none'; pillClass = 'pill-gray';
+      pillText = 'Enter a budget to see your result';
+    } else if (pct >= 100) {
+      status = 'over'; pillClass = 'pill-green';
+      pillText = pct.toFixed(1) + '% of budget achieved — at or over budget';
+    } else if (pct >= 90) {
+      status = 'under'; pillClass = 'pill-amber';
+      pillText = pct.toFixed(1) + '% of budget achieved — 90–99% range';
+    } else {
+      status = 'below'; pillClass = 'pill-gray';
+      pillText = pct.toFixed(1) + '% of budget achieved — below 90%';
+    }
+
+    document.getElementById('status-wrap').innerHTML =
+      '<div class="status-pill ' + pillClass + '"><span class="pill-dot"></span>' + pillText + '</div>';
+
+    // --- Base bonus ---
+    var baseBonus = 0;
+    var baseSub   = '';
+    var lines     = [];
+
+    if (status === 'over' && kpisMet) {
+      baseBonus = qtrSal * 0.10;
+      baseSub   = '10% of quarterly salary';
+      document.getElementById('base-label').textContent = 'Niche budget bonus';
+      lines.push('Niche budget bonus: <b>10%</b> &times; ' + money(qtrSal) + ' = <b>' + money(baseBonus) + '</b>');
+    } else if (status === 'over' && !kpisMet) {
+      baseSub = 'KPI targets not met';
+      document.getElementById('base-label').textContent = 'Niche budget bonus';
+      lines.push('<span class="warn">Budget reached but not all KPI targets met &mdash; both LinkedIn and client visit targets must be met for the budget bonus.</span>');
+    } else if (status === 'under') {
+      baseBonus = qtrSal * 0.05;
+      baseSub   = '5% of quarterly salary';
+      document.getElementById('base-label').textContent = 'Under budget bonus';
+      lines.push('Under budget bonus: <b>5%</b> &times; ' + money(qtrSal) + ' = <b>' + money(baseBonus) + '</b>');
+    } else if (status === 'below') {
+      baseSub = 'No bonus payable';
+      document.getElementById('base-label').textContent = 'Niche budget bonus';
+      lines.push('Below 90% of budget &mdash; no bonus payable.');
+    } else {
+      baseSub = '—';
+      document.getElementById('base-label').textContent = 'Niche budget bonus';
+    }
+
+    document.getElementById('base-val').textContent = money(baseBonus);
+    document.getElementById('base-sub').textContent = baseSub;
+    setTileState('base-tile', 'niche-active', 'niche-inactive', baseBonus > 0);
+
+    // --- OBB ---
+    var obbBonus = 0;
+
+    if (status === 'over' && kpisMet && overPct > 0) {
+      var obbPct = overPct / 2;
+      obbBonus   = qtrSal * (obbPct / 100);
+      document.getElementById('obb-sub').textContent = obbPct.toFixed(1) + '% of quarterly salary';
+      lines.push('OBB: ' + overPct.toFixed(1) + '% over budget &divide; 2 = <b>' + obbPct.toFixed(1) + '%</b> &times; ' + money(qtrSal) + ' = <b>' + money(obbBonus) + '</b>');
+    } else if (status === 'over' && kpisMet && overPct <= 0) {
+      document.getElementById('obb-sub').textContent = 'Billings must exceed 100%';
+      lines.push('OBB: billings must exceed 100% of budget to qualify.');
+    } else {
+      document.getElementById('obb-sub').textContent = '—';
+    }
+
+    document.getElementById('obb-val').textContent = money(obbBonus);
+    document.getElementById('obb-tile').style.display = obbBonus > 0 ? 'block' : 'none';
+    setTileState('obb-tile', 'niche-active', 'niche-inactive', obbBonus > 0);
+
+    // --- Regional bonus ---
+    var regionalBonus = 0;
+    var regionalSub   = '';
+    var regionalEligible = false;
+    var regionalTile = document.getElementById('regional-tile');
+
+    if (regional) {
+      regionalTile.style.display = 'block';
+      if (budget > 0) {
+        if (pct >= 100) {
+          regionalBonus    = qtrSal * 0.05;
+          regionalSub      = '5% of quarterly salary';
+          regionalEligible = true;
+          lines.push('Regional bonus: team at <b>' + pct.toFixed(1) + '%</b> of budget &mdash; <b>5%</b> &times; ' + money(qtrSal) + ' = <b>' + money(regionalBonus) + '</b>');
+        } else if (pct >= 75) {
+          regionalBonus    = qtrSal * 0.025;
+          regionalSub      = '2.5% of quarterly salary';
+          regionalEligible = true;
+          lines.push('Regional bonus: team at <b>' + pct.toFixed(1) + '%</b> of budget &mdash; <b>2.5%</b> &times; ' + money(qtrSal) + ' = <b>' + money(regionalBonus) + '</b>');
+        } else {
+          regionalSub = 'Team below 75% of budget';
+          lines.push('Regional bonus: team below 75% of budget &mdash; no regional bonus payable.');
+        }
+      } else {
+        regionalSub = 'Enter a budget to calculate';
+        lines.push('Regional bonus: enter a budget figure to calculate.');
+      }
+    } else {
+      regionalTile.style.display = 'none';
+      lines.push('Regional bonus: regional budget not achieved.');
+    }
+
+    document.getElementById('regional-val').textContent = money(regionalBonus);
+    document.getElementById('regional-sub').textContent = regionalSub;
+    setTileState('regional-tile', 'regional-active', 'regional-inactive', regionalEligible);
+
+    // --- Total ---
+    var total    = baseBonus + obbBonus + regionalBonus;
+    var hasTotal = total > 0;
+
+    document.getElementById('total-val').textContent = money(total);
+    document.getElementById('total-sub').textContent = annual > 0 && hasTotal
+      ? (((total / qtrSal) * 100).toFixed(1) + '% of quarterly salary')
+      : '';
+    setTileState('total-tile', 'total-active', 'total-inactive', hasTotal);
+
+    if (annual > 0) {
+      lines.push('<span class="note">Quarterly salary = ' + money(qtrSal) + ' (annual &divide; 4)</span>');
+    }
+
+    document.getElementById('breakdown').innerHTML = lines.join('<br>');
+  }
+
+  calc();
+</script>
+</body>
+</html>
